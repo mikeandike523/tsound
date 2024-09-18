@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-      "target": "ES2022",
+      "target": "ESNext",
       "module": "ESNext",
-      "moduleResolution": "node",
+      "moduleResolution": "Node",
       "outDir": "./dist",
       "rootDir": ".",
       "strict": true,
@@ -11,7 +11,8 @@
       "forceConsistentCasingInFileNames": true,
       "resolveJsonModule": true,
       "sourceMap": true,
-      "declaration": true
+      "declaration": true,
+      "lib": ["ESNext", "DOM"]
     },
     "include": ["./src/**/*.ts","./tests/**/*.ts"],
     "exclude": ["node_modules", "**/*.spec.ts"]
