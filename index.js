@@ -117,9 +117,8 @@ window.masterTrack = {};
 
 window.masterTrack.sampleRate = 44100;
 window.masterTrack.engineBufferSize = 1024;
-window.masterTrack.engineMaxQueuedBuffers = 4;
-window.masterTrack.maxQueuedSamples = 1024 * 8;
-window.masterTrack.latencyHint = "balanced";
+window.masterTrack.maxQueuedSamples = 44100*10;
+window.masterTrack.latencyHintFactor = 1;
 window.masterTrack.playHead = 0;
 window.masterTrack.bufferMono = new Float32Array(
   window.masterTrack.maxQueuedSamples
@@ -335,8 +334,8 @@ window.turnMasterOn = async () => {
     window.masterTrack.engineCallback,
     window.masterTrack.sampleRate,
     window.masterTrack.engineBufferSize,
-    window.masterTrack.latencyHint,
-    window.masterTrack.engineMaxQueuedBuffers
+    window.masterTrack.latencyHintFactor
+
   );
 
   window.logStatus("Done.");

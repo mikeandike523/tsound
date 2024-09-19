@@ -16,8 +16,7 @@ export type OutputOnlyStreamCallback = (buffOut: AudioBuffer) => void;
  * @param bufferSize -
  * A buffer size that is compatible with the hardware.
  * You can get it from querying the hardware device information.
- * @param latencyHint
- * See https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/AudioContext#latencyhint
+ * @param latencyHintFactor
  *
  * @param numPreparedBuffers -
  * In case it takes excessive time to prepare the next buffer,
@@ -34,11 +33,10 @@ export async function openDefaultOutputOnlyStream(
   callback: OutputOnlyStreamCallback,
   sampleRate: number,
   bufferSize: number,
-  latencyHint: "playback" | "balanced" | "interactive" | number="balanced",
-  numPreparedBuffers: number = 2
+  latencyHintFactor: number=4
 ) {
   const audioContext = new window.AudioContext({
-    latencyHint,
+    latencyHint:bufferSize / sampleRate / latencyHintFactor,
     sampleRate
   });
 
@@ -50,33 +48,27 @@ export async function openDefaultOutputOnlyStream(
             class OutputProcessor extends AudioWorkletProcessor {
               constructor() {
                 super();
-                this.processedSamplesSoFar = 0;
                 this.bufferSize = ${bufferSize};
-                this.numPreparedBuffers = ${numPreparedBuffers};
-                this.emptyBuffer = new Float32Array(this.bufferSize);
-                this.accruedBuffer = new Float32Array(this.bufferSize*this.numPreparedBuffers);
-                this.accruedBufferIndex = 0;
-                this.playbackIndex = 0;
+                this.buffer = new Float32Array(this.bufferSize).fill(0);
                 this.port.onmessage = (event) => {
-                  const previousIndex = (this.accruedBufferIndex  ) % this.numPreparedBuffers;
                   for(let i = 0; i < this.bufferSize; i++) {
-                    this.accruedBuffer[i+this.bufferSize*previousIndex] = event.data[i];
+                    this.buffer[i] = event.data[i];
                   }
-                  this.accruedBufferIndex = (this.accruedBufferIndex + 1) % this.numPreparedBuffers;
-                  };
+                };
+                this.playHead = 0
               }
     
               process(inputs, outputs, parameters) {
                 const output = outputs[0];
                 const outputChannel = output[0];
                 for (let i = 0; i < outputChannel.length; i++) {
-                    outputChannel[i] = this.accruedBuffer[i+this.bufferSize*this.playbackIndex+this.processedSamplesSoFar] || 0;
+                    outputChannel[i] = this.buffer[this.playHead+i]
                 }
-                this.processedSamplesSoFar+=outputChannel.length;
-                if(this.processedSamplesSoFar >= this.bufferSize) {
-                  this.playbackIndex = (this.playbackIndex + 1) % this.numPreparedBuffers;
-                  this.processedSamplesSoFar = 0;
-                  this.port.postMessage(this.emptyBuffer);
+                this.playHead += outputChannel.length;
+
+                if(this.playHead >= this.bufferSize) {
+                  this.playHead = 0;
+                  this.port.postMessage(this.buffer);
                 }
                 return true;
               }
