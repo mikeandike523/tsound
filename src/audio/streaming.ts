@@ -1,49 +1,11 @@
-/**
- *
- * Gets either the built in speakers or external speakers/headphones.
- *
- * @param preferHeadphones -
- * Whether to prefer headphones or external speakers over built in speakers.
- */
-export async function getStandardAudioPlaybackDevice(
-  preferHeadphones: boolean = false
-) {
-  // Query the available audio output devices
-  const devices = await navigator.mediaDevices.enumerateDevices();
 
-  console.log(devices);
-
-  // Filter out audio output devices
-  const audioOutputDevices = devices.filter(
-    (device) => device.kind === "audiooutput"
-  );
-
-  if (audioOutputDevices.length === 0) {
-    console.warn("No audio output devices found.");
-    return null;
-  }
-
-  // If preferHeadphones is true, try to find a device labeled as headphones or an external speaker
-  if (preferHeadphones) {
-    const externalDevice = audioOutputDevices.find((device) =>
-      /headphone|speaker/i.test(device.label)
-    );
-    if (externalDevice) {
-      return externalDevice;
-    }
-  }
-
-  // Otherwise, return the first available device (likely the built-in speakers)
-  return audioOutputDevices[0];
-}
 
 export type OutputOnlyStreamCallback = (buffOut: AudioBuffer) => void;
 
 /**
  *
  * Opens an output-only audio stream and provide callbacks to start and stop playback.
- *
- * @param device -
+ * 
  * The device to use for playback.
  * @param callback -
  * The function that computes what samples are to be played next.
@@ -68,8 +30,7 @@ export type OutputOnlyStreamCallback = (buffOut: AudioBuffer) => void;
  * Output-only streams are ueful for (live) synths
  * In-Out streams are useful for (live) effects
  */
-export async function openOutputOnlyStream(
-  device: MediaDeviceInfo,
+export async function openDefaultOutputOnlyStream(
   callback: OutputOnlyStreamCallback,
   sampleRate: number,
   bufferSize: number,
@@ -78,7 +39,7 @@ export async function openOutputOnlyStream(
 ) {
   const audioContext = new window.AudioContext({
     latencyHint,
-    sampleRate: sampleRate,
+    sampleRate
   });
 
   try {

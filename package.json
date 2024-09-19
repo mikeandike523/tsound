@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/main.js",
   "scripts": {
-    "compile": "./node_modules/.bin/tsc && cp index.html dist/index.html",
+    "compile": "./node_modules/.bin/tsc && cp index.html dist/index.html && cp index.js dist/index.js && cp index.css dist/index.css",
     "serve": "./node_modules/.bin/http-server -c-1 -p 3000 dist"
   },
   "keywords": [],

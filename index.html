@@ -3,49 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Run JS File</title>
+    <title>TSound</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js"></script>
+    <link rel="stylesheet" href="/index.css" />
+    <script type="module" defer src="/ui-engine.js"></script>
+    <script type="module" defer src="/index.js"></script>
   </head>
   <body>
-    <h1>Run JavaScript from /tests/</h1>
-
-    <label for="scriptName">Enter JavaScript file name (e.g., test1.js):</label>
-    <input type="text" id="scriptName" placeholder="test1.js" />
-    <button id="runScript">Run Script</button>
-
-    <script>
-      document.addEventListener("DOMContentLoaded",()=>{
-        if(sessionStorage.getItem("lastFile")){
-          document.getElementById("scriptName").value = sessionStorage.getItem("lastFile");
-        }
-      })
-      document.getElementById("runScript").addEventListener("click", () => {
-        const scriptName = document.getElementById("scriptName").value.trim();
-
-        if (!scriptName) {
-          alert("Please enter a valid script name");
-          return;
-        }
-
-        // Check if a previous script with the same src exists and remove it
-        const existingScript = document.querySelector(
-          `script[src="/tests/${scriptName}"]`
-        );
-        if (existingScript) {
-          existingScript.remove();
-        }
-
-        sessionStorage.setItem("lastFile",scriptName)
-
-        // Create a new script element
-        const script = document.createElement("script");
-        script.src = `/tests/${scriptName}`;
-        script.type = "module";
-        script.onerror = () =>
-          alert(`Failed to load script: /tests/${scriptName}`);
-
-        // Append the script to the body to run it
-        document.body.appendChild(script);
-      });
-    </script>
+    <div class="MainContainer">
+      <div class="MenuBar">
+        <button class="MasterOnButton">MASTER ON</button>
+        <button class="RunButton" disabled>RUN</button>
+      </div>
+      <div class="CodeEditorContainer"></div>
+      <div class="StatusContainer">
+        <div class="StatusMonitor"></div>
+        <div class="StatusLog"></div>
+      </div>
+    </div>
   </body>
 </html>

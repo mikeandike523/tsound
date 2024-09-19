@@ -1,0 +1,125 @@
+/* 
+The default measuring mode should be border-box in my opinion
+Idk why browsers dont do that
+maybe for backwards compatibility
+
+There may be some elements that are not compatible with the box-sizing property, but
+in my experience this doesnt seem to break anything
+*/
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+body {
+  /* Undo the wierd default styling in modern browsers */
+  margin: 0;
+  padding: 0;
+
+  /* Make the body take up the whole viewport
+        Once again, in my opinion this should be the default
+        but it is what it is
+
+        Use vw and vh since they count as "fully qualified dimensions" similar to px
+        And serve as the basis for the computations of
+        sizing of children with percent or other relative size constraintss
+    */
+  width: 100vw;
+  height: 100vh;
+
+  /* 
+    Probably redundant
+
+    And if there is any reason to need different scrolling behavior in a viewport-size
+    piece of content, just add in a container div and style appropriately
+    */
+  overflow: auto;
+
+  /* 
+    Have the browser use a sans-serif font for normal text
+    The browser will use whatever its default sans serif font is
+    */
+  font-family: sans-serif;
+}
+
+/*
+Use a monospace font for anything wrapped in <pre><code>
+The browser will use whatever its default monospace font is
+*/
+pre code {
+  font-family: monospace;
+}
+
+/* 
+App specific settings
+
+Convention:
+
+Give a class to unique logical "components" of the user interface, in upper cammel case
+*/
+
+:root {
+  --colors-brand: rgba(255,100,128,1.0);
+  --menubar-padding: 4px;
+  --menubar-content-width: 64px;
+}
+
+.MainContainer {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+}
+
+.MenuBar {
+  height: 100%;
+  width: calc( var(--menubar-content-width) + 2 * var(--menubar-padding));
+  padding: var(--menubar-padding);
+  background-color: var(--colors-brand);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start
+}
+
+.CodeEditorContainer {
+  flex: 2;
+}
+
+.StatusContainer {
+  flex: 1;
+  background: var(--colors-brand);
+  display: flex;
+  flex-direction: column;
+}
+
+.StatusMonitor {
+  flex: 1;
+  width: 100%;
+}
+
+.StatusLog {
+  flex: 1;
+  width: 100%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+}
+
+.RunButton {
+  width: var(--menubar-content-width);
+  aspect-ratio: 1.0;
+}
+
+.MasterOnButton {
+  width: var(--menubar-content-width);
+  aspect-ratio: 1.0;
+}
+
+
+
