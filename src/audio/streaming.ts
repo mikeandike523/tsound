@@ -51,9 +51,7 @@ export async function openDefaultOutputOnlyStream(
                 this.bufferSize = ${bufferSize};
                 this.buffer = new Float32Array(this.bufferSize).fill(0);
                 this.port.onmessage = (event) => {
-                  for(let i = 0; i < this.bufferSize; i++) {
-                    this.buffer[i] = event.data[i];
-                  }
+                  this.buffer.set(event.data);
                 };
                 this.playHead = 0
               }
@@ -92,12 +90,13 @@ export async function openDefaultOutputOnlyStream(
 
       // Set up the callback to fill the buffer
       const buffer = new Float32Array(bufferSize);
+      const audioBuffer = audioContext.createBuffer(
+        1,
+        bufferSize,
+        sampleRate
+      );
       const advance = () => {
-        const audioBuffer = audioContext.createBuffer(
-          1,
-          bufferSize,
-          sampleRate
-        );
+
         callback(audioBuffer);
 
         audioBuffer.copyFromChannel(buffer, 0);
