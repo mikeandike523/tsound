@@ -118,7 +118,7 @@ window.masterTrack = {};
 window.masterTrack.sampleRate = 44100;
 window.masterTrack.engineBufferSize = 2048;
 window.masterTrack.maxQueuedSamples = 44100*10;
-window.masterTrack.latencyHintFactor = 16;
+window.masterTrack.latencyHintFactor = 8;
 window.masterTrack.playHead = 0;
 window.masterTrack.bufferMono = new Float32Array(
   window.masterTrack.maxQueuedSamples
