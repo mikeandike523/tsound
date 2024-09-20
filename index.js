@@ -1,4 +1,4 @@
-import { openDefaultOutputOnlyStream } from "./src/audio/streaming.js";
+import { createDynamicAuidoPlayer } from "./src/audio/streaming.js";
 
 require.config({
   paths: {
@@ -116,54 +116,20 @@ window.logStatus('Welcome to TSound.\nPress "MASTER ON" to start...');
 window.masterTrack = {};
 
 window.masterTrack.sampleRate = 44100;
-window.masterTrack.engineBufferSize = 2048;
-window.masterTrack.maxQueuedSamples = 44100*10;
-window.masterTrack.latencyHintFactor = 8;
-window.masterTrack.playHead = 0;
-window.masterTrack.bufferMono = new Float32Array(
-  window.masterTrack.maxQueuedSamples
-).fill(0);
-window.masterTrack.preloadedSampleCount = 0;
+window.masterTrack.maxQueuedContentSeconds = 10;
+window.masterTrack.requestedLatency = 2048/44100/4;
 
-window.masterTrack.advancePlayHead = (samples) => {
-  window.masterTrack.playHead =
-    (window.masterTrack.playHead + samples) %
-    window.masterTrack.maxQueuedSamples;
-};
 
-window.masterTrack.indexFromPlayHead = (offset) => {
-  return (
-    (window.masterTrack.playHead + offset) % window.masterTrack.maxQueuedSamples
-  );
-};
-
-window.masterTrack.engineCallback = (audioBuffer) => {
-  const bufferLength = audioBuffer.getChannelData(0).length;
-  for (let i = 0; i < bufferLength; i++) {
-    audioBuffer.getChannelData(0)[i] = 0;
-
-    if (window.masterTrack.preloadedSampleCount === 0) {
-      continue;
-    }
-    const sample =
-      window.masterTrack.bufferMono[window.masterTrack.indexFromPlayHead(i)];
-    audioBuffer.getChannelData(0)[i] = sample;
-    window.masterTrack.advancePlayHead(1);
-    window.masterTrack.preloadedSampleCount = Math.max(
-      window.masterTrack.preloadedSampleCount - 1,
-      0
-    );
-  }
-};
-
+/**
+ * 
+ * @param {Float32Array} samples 
+ */
 window.masterTrack.pushSamples = (samples) => {
-  for (let i = 0; i < samples.length; i++) {
-    const putIndex = window.masterTrack.indexFromPlayHead(
-      window.masterTrack.preloadedSampleCount + i
-    );
-    window.masterTrack.bufferMono[putIndex] = samples[i];
+  if(window.masterTrack.outputStream){
+    window.masterTrack.outputStream.queueMoreContent(samples);
+  }else{
+    window.logStatus('Master track is not yet ready.');
   }
-  window.masterTrack.preloadedSampleCount += samples.length;
 };
 
 window.workerList = {};
@@ -330,19 +296,15 @@ window.killUniqueWorker = (uid) => {
 window.turnMasterOn = async () => {
   window.logStatus("Creating master track monoaudio stream...");
 
-  window.masterTrack.audioStreamMono = await openDefaultOutputOnlyStream(
-    window.masterTrack.engineCallback,
+  window.masterTrack.outputStream = await createDynamicAuidoPlayer(
     window.masterTrack.sampleRate,
-    window.masterTrack.engineBufferSize,
-    window.masterTrack.latencyHintFactor
-
+    window.masterTrack.maxQueuedContentSeconds,
+    window.masterTrack.requestedLatency
   );
 
   window.logStatus("Done.");
 
   window.logStatus("Starting master track monoaudio stream...");
-
-  await window.masterTrack.audioStreamMono.play();
 
   window.logStatus("Master track monoaudio stream is ON.");
 
