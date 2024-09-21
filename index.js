@@ -117,18 +117,17 @@ window.masterTrack = {};
 
 window.masterTrack.sampleRate = 44100;
 window.masterTrack.maxQueuedContentSeconds = 10;
-window.masterTrack.requestedLatency = 2048/44100/4;
-
+window.masterTrack.requestedLatency = 2048 / 44100 / 4;
 
 /**
- * 
- * @param {Float32Array} samples 
+ *
+ * @param {Float32Array} samples
  */
 window.masterTrack.pushSamples = (samples) => {
-  if(window.masterTrack.outputStream){
+  if (window.masterTrack.outputStream) {
     window.masterTrack.outputStream.queueMoreContent(samples);
-  }else{
-    window.logStatus('Master track is not yet ready.');
+  } else {
+    window.logStatus("Master track is not yet ready.");
   }
 };
 
@@ -225,6 +224,7 @@ window.runInUniquePromise = (javascriptCode) => {
         reject(err);
       }
     }).catch((err) => {
+      console.error(err);
       window.logStatus(`Error in promise ID ${uid}: ${err.message}`);
       if (err.stack) {
         window.logStatus(`Stack trace for error ID ${uid}: ${err.stack}`);
@@ -238,33 +238,6 @@ window.runInUniquePromise = (javascriptCode) => {
   window.logStatus(`Promise created with ID: ${uid}`);
 
   // Return the promise and worker ID
-  return uid;
-};
-
-// Runs code in unique interval and uses clearInterval for termination
-window.runInUniqueInterval = (javascriptCode, ms) => {
-  const uid = window.getUniqueWorkerId();
-
-  const intervalId = setInterval(() => {
-    try {
-      eval(javascriptCode);
-    } catch (err) {
-      window.logStatus(`Error in interval ID ${uid}: ${err.message}`);
-    }
-  }, ms);
-
-  const workerMetadata = {
-    kind: "interval",
-    killable: true,
-    intervalId,
-    ms,
-  };
-
-  window.workerList[uid] = workerMetadata;
-
-  // Logging status
-  window.logStatus(`Interval created with ID: ${uid} and interval: ${ms}ms`);
-
   return uid;
 };
 
@@ -284,11 +257,7 @@ window.killUniqueWorker = (uid) => {
   if (workerMetadata.kind === "thread") {
     workerMetadata.worker.terminate();
     window.logStatus(`Terminated worker with ID: ${uid}`);
-  } else if (workerMetadata.kind === "interval") {
-    clearInterval(workerMetadata.intervalId);
-    window.logStatus(`Cleared interval with ID: ${uid}`);
   }
-
   // Remove the worker from the list
   delete window.workerList[uid];
 };
@@ -330,6 +299,11 @@ document
       .turnMasterOn()
       .then(() => {})
       .catch((err) => {
+        console.error(err);
+
         window.logStatus(`Error starting master track: ${err.message}`);
+        if (err.stack) {
+          window.logStatus(`Stack trace: ${err.stack}`);
+        }
       });
   });
