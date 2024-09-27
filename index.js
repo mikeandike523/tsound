@@ -154,61 +154,6 @@ window.getUniqueWorkerId = () => {
   return newWorkerId;
 };
 
-// Runs code in a new web worker for performance
-window.runInUniqueThread = (javascriptCode) => {
-  const uid = window.getUniqueWorkerId();
-  const blob = new Blob([`onmessage = function(event) { ${javascriptCode} }`], {
-    type: "application/javascript",
-  });
-  const worker = new Worker(URL.createObjectURL(blob));
-
-  const workerMetadata = {
-    kind: "thread",
-    killable: true,
-    worker,
-  };
-
-  window.workerList[uid] = workerMetadata;
-
-  // Logging status
-  window.logStatus(`Worker created with ID: ${uid}`);
-
-  // Return the worker ID for external reference
-  return uid;
-};
-
-// Runs code in a new web worker for performance
-window.runInUniqueThread = (javascriptCode) => {
-  const uid = window.getUniqueWorkerId();
-  const blob = new Blob(
-    [
-      `onmessage = function(event) { 
-   
-       ${javascriptCode};
-    
-    }`,
-    ],
-    {
-      type: "application/javascript",
-    }
-  );
-  const worker = new Worker(URL.createObjectURL(blob));
-
-  const workerMetadata = {
-    kind: "thread",
-    killable: true,
-    worker,
-  };
-
-  window.workerList[uid] = workerMetadata;
-
-  // Logging status
-  window.logStatus(`Worker created with ID: ${uid}`);
-
-  // Return the worker ID for external reference
-  return uid;
-};
-
 // Runs code in the main thread but non-blocking via Promise
 window.runInUniquePromise = (javascriptCode) => {
   const uid = window.getUniqueWorkerId();
@@ -239,27 +184,6 @@ window.runInUniquePromise = (javascriptCode) => {
 
   // Return the promise and worker ID
   return uid;
-};
-
-// Kills a worker by its unique ID
-window.killUniqueWorker = (uid) => {
-  const workerMetadata = window.workerList[uid];
-
-  if (!workerMetadata) {
-    throw new Error(`Worker with id ${uid} does not exist.`);
-  }
-
-  if (!workerMetadata.killable) {
-    throw new Error(`Worker with id ${uid} is not killable.`);
-  }
-
-  // Kill based on type
-  if (workerMetadata.kind === "thread") {
-    workerMetadata.worker.terminate();
-    window.logStatus(`Terminated worker with ID: ${uid}`);
-  }
-  // Remove the worker from the list
-  delete window.workerList[uid];
 };
 
 window.turnMasterOn = async () => {
