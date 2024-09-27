@@ -14,57 +14,34 @@ require(["vs/editor/editor.main"], function () {
     {
       value:
         `
-// Javascript Code
-// Will be \`eval\` inside a promise
-// must be synchronous and CommonJS
-// But you may define async functions or use IIFE to use async/await
-// (this is because Javascript does indeed allow promises to be spawned from within other promises)
-// Behaves similarly to running code snippets in the browser console
 
-// Play the C Major Scale
+  const semitone = Math.pow(2, 1/12)
 
-const semitone = Math.pow(2, 1 / 12)
+  const A = 440
+  const C = A * Math.pow(semitone, 3);
 
-const middleC = 220 * Math.pow(semitone, 3)
+  const track1 = new MixerTrack(8192,0.5)
+  const track2 = new MixerTrack(8192,0.5)
 
-const majorScale = [
-      0,
-      2,
-      2,
-      1,
-      2,
-      2,
-      2,
-      1
-]
+  const mixer = new Mixer(8192, master)
 
-let f = middleC;
+  mixer.addTrack(track1)
+  mixer.addTrack(track2)
 
-const freqs = []
-
-majorScale.forEach((interval) => {
-  f = f * Math.pow(semitone, interval)
-  freqs.push(f)
-});
-
-const delay = (ms)=>{
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-(async ()=>{
-  
-  for(let i = 0; i < freqs.length; i++) {
-    const freq = freqs[i];
-    masterTrack.pushSamples(
-      new Array(Math.round(0.5*44100)).fill(0).map((_,i)=>{
-        return Math.cos(2*Math.PI*i/44100*freq);  
-      })
-    )
-    await delay(500)
+  function song(elapsedTime){
+    for(let i = 0; i < 8192; i++) {
+      const angle1 = 2*Math.PI * (elapsedTime+i/44100) * A;
+      const angle2 = 2*Math.PI * (elapsedTime+i/44100) * C;
+      track1.data[i] = Math.sin(angle1);
+      track2.data[i] = Math.sin(angle2);
+    }
+    mixer.mix();
+    mixer.send()
   }
-  
-})();
 
+  const scrubPlayer = new ScrubPlayer(song, 8192, master.sampleRate)
+
+  scrubPlayer.start();
 
     `.trim() + "\n\n",
       language: "javascript", // Set the language mode
@@ -113,19 +90,20 @@ window.logStatus = (message) => {
 // test
 window.logStatus('Welcome to TSound.\nPress "MASTER ON" to start...');
 
-window.masterTrack = {};
+window.master = {};
 
-window.masterTrack.sampleRate = 44100;
-window.masterTrack.maxQueuedContentSeconds = 10;
-window.masterTrack.requestedLatency = 1024 / 44100 / 2;
+window.master.sampleRate = 44100;
+window.master.maxQueuedContentSeconds = 10;
+window.master.requestedLatency = 1024 / 44100 / 2;
+window.master.buffferSize = 1024
 
 /**
  *
  * @param {Float32Array} samples
  */
-window.masterTrack.pushSamples = (samples) => {
-  if (window.masterTrack.outputStream) {
-    window.masterTrack.outputStream.queueMoreContent(samples);
+window.master.pushSamples = (samples) => {
+  if (window.master.outputStream) {
+    window.master.outputStream.queueMoreContent(samples);
   } else {
     window.logStatus("Master track is not yet ready.");
   }
@@ -189,10 +167,10 @@ window.runInUniquePromise = (javascriptCode) => {
 window.turnMasterOn = async () => {
   window.logStatus("Creating master track monoaudio stream...");
 
-  window.masterTrack.outputStream = await createDynamicAuidoPlayer(
-    window.masterTrack.sampleRate,
-    window.masterTrack.maxQueuedContentSeconds,
-    window.masterTrack.requestedLatency
+  window.master.outputStream = await createDynamicAuidoPlayer(
+    window.master.sampleRate,
+    window.master.maxQueuedContentSeconds,
+    window.master.requestedLatency
   );
 
   window.logStatus("Done.");
@@ -231,3 +209,86 @@ document
         }
       });
   });
+
+class Mixer {
+  constructor(bufferSize,target) {
+    /**
+     * @type {Array<MixerTrack>}
+     */
+    this.tracks = [];
+    this.bufferSize = bufferSize;
+    this.data = new Float32Array(bufferSize);
+    this.target = target;
+  }
+  addTrack(track){
+    this.tracks.push(track);
+  }
+  mix(){
+
+      for(let i = 0; i < this.bufferSize; i++){
+        let total = 0;
+        for(let j = 0; j < this.tracks.length; j++){
+          total += this.tracks[j].data[i]*this.tracks[j].volume;
+        }
+        if(total <-1){
+          total = -1;
+        }
+        if(total > 1){
+          total = 1;
+        }
+        this.data[i] = total;
+      }
+    
+  }
+  send(){
+    this.target.pushSamples(this.data);
+  }
+}
+
+class MixerTrack {
+   constructor(bufferSize, volume){
+      this.volume = volume;
+      this.bufferSize = bufferSize;
+      this.data = new Float32Array(bufferSize);
+   }
+   set(samples){
+    this.data.set(samples, this.writehead);
+   }
+}
+
+
+class ScrubPlayer {
+  constructor(callback, bufferSize, sampleRate){
+    this.callback = callback;
+    this.current = 0;
+    this.initial = 0;
+    this.running = false;
+    this.timeInterval = bufferSize / sampleRate;
+  }
+  processFrame(){
+    if(this.running){
+      const now = performance.now()/1000;
+      if(now - this.current >= this.timeInterval || this.current === this.initial) {
+        this.callback(this.current-this.initial);
+        this.current = now;
+      }
+      window.requestAnimationFrame(this.processFrame.bind(this));
+    }
+  }
+  start(){
+    this.running = true;
+    this.inital = performance.now()/1000;
+    this.current = this.initial;
+    this.processFrame();
+  }
+  stop(){
+    this.running = false;
+  } 
+  scrub(time){
+    this.current = time;
+  }
+}
+
+window.MixerTrack = MixerTrack
+window.Mixer = Mixer
+window.ScrubPlayer = ScrubPlayer
