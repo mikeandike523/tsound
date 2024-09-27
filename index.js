@@ -117,7 +117,7 @@ window.masterTrack = {};
 
 window.masterTrack.sampleRate = 44100;
 window.masterTrack.maxQueuedContentSeconds = 10;
-window.masterTrack.requestedLatency = 2048 / 44100 / 4;
+window.masterTrack.requestedLatency = 1024 / 44100 / 2;
 
 /**
  *
