@@ -18,5 +18,8 @@
     "webpack": "^5.0.0",
     "webpack-cli": "^4.0.0",
     "webpack-node-externals": "^3.0.0"
+  },
+  "dependencies": {
+    "mime": "^4.0.4"
   }
 }

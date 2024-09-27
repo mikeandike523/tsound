@@ -93,10 +93,10 @@ export async function createDynamicAuidoPlayer(
 
   const maxQueuedSamples = Math.ceil(maxQueuedContentSeconds * sampleRate);
 
-  const sbaredArrayBuffer = new SharedArrayBuffer(
+  const sharedArrayBuffer = new SharedArrayBuffer(
     maxQueuedSamples * Int32Array.BYTES_PER_ELEMENT
   );
-  const sharedArray = new Int32Array(sbaredArrayBuffer);
+  const sharedArray = new Int32Array(sharedArrayBuffer);
   const varMap = {
     playhead: 0,
     writeHead: 1,
@@ -161,10 +161,10 @@ export async function createDynamicAuidoPlayer(
                 this.sharedArrayBufferMachineState = null
                 this.sharedArrayMachineState = null;
 
-                // Any helper functions i do NOT want to rewrite
-                this.sharedHelpesr = null
-
                 this.port.onmessage = (event) => {
+                console.log(event.data)
+
+
                   const { sharedHelpers,varMap, sharedArrayBuffer,sharedArrayBufferMachineState} = event.data;
                   this.sharedArrayBuffer = sharedArrayBuffer;
                   this.sharedArray = new Int32Array(this.sharedArrayBuffer);
@@ -248,15 +248,18 @@ export async function createDynamicAuidoPlayer(
                * but we can never rely on it being constant
                */
               process(inputs, outputs, parameters) {
+
                 if(!this.sharedArrayBuffer) {
                   return true
                 }
                 if(!this.sharedArrayBufferMachineState) {
                  return true
                 }
+
                 if(!this.varMap) {
                   return true
                 }
+
                 if(this.getContentMutexIsLockedAtomic()===1) {
                   return true
                 }
@@ -271,7 +274,7 @@ export async function createDynamicAuidoPlayer(
                 for(let i = 0; i < numToFill; i++) {
                   // As far as I reaclly, atomic reads are NOT needed here
                   // And will slow things down
-                  const int32value = this.sharedArrayMachineState[(playhead + i) % this.maxQueuedSamples]
+                  const int32value = this.sharedArray[(playhead + i) % this.maxQueuedSamples]
                   const t = (int32value-INT32_MIN) / (INT32_MAX - INT32_MIN)
                   outputChannel[i] = t * 2 - 1;
                 }
@@ -282,7 +285,7 @@ export async function createDynamicAuidoPlayer(
                 // Might be useful in the future
                 // I think that maybe if we want a DAW like scrub function
                 // then its useful if main thread knows it
-                this.setPlayheadAtomic((playhead + numToFill) % this.maxQueuedSamples)
+                this.setPlayheadAtomic((playhead + outputChannel.length) % this.maxQueuedSamples)
                 this.setNumQueuedSamplesAtomic(Math.max(0, samplesLeft - outputChannel.length))
                 return true;
               }
@@ -308,7 +311,7 @@ export async function createDynamicAuidoPlayer(
       workletNode.connect(audioContext.destination);
 
       workletNode.port.postMessage({
-        sbaredArrayBuffer,
+        sharedArrayBuffer,
         sharedArrayBufferMachineState,
         varMap,
       });
